@@ -122,12 +122,27 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 local minimized = false
+local fullSize = UDim2.fromOffset(size.X, size.Y)
+local minSize = UDim2.fromOffset(size.X, 40)
+
 minimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
+
     if minimized then
-        main.Size = UDim2.fromOffset(size.X, 40)
+        -- Esconde conteúdo
+        for _, child in ipairs(main:GetChildren()) do
+            if child ~= top then
+                child.Visible = false
+            end
+        end
+        tween(main, {Size = minSize}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
     else
-        main.Size = UDim2.fromOffset(size.X, size.Y)
+        tween(main, {Size = fullSize}, 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out):Play()
+        task.delay(0.26, function()
+            for _, child in ipairs(main:GetChildren()) do
+                child.Visible = true
+            end
+        end)
     end
 end)
 
