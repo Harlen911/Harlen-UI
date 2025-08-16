@@ -1,0 +1,377 @@
+-- OrionLike UI - single file
+-- Estilo dark + roxo, abas à esquerda e conteúdo à direita.
+
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- ========= Helpers / Theme =========
+local Theme = {
+    Bg = Color3.fromRGB(18,18,20),
+    Panel = Color3.fromRGB(26,26,30),
+    Stroke = Color3.fromRGB(60,60,66),
+    Accent = Color3.fromRGB(138,87,255),
+    Accent2 = Color3.fromRGB(95,60,200),
+    Text = Color3.fromRGB(230,230,235),
+    SubText = Color3.fromRGB(170,170,180),
+    Good = Color3.fromRGB(90,200,120),
+    Warn = Color3.fromRGB(255,95,95),
+}
+
+local function protectParent(gui)
+    gui.ResetOnSpawn = false
+    local ok, res = pcall(function() return gethui and gethui() end)
+    if ok and res then gui.Parent = res
+    else
+        local cg = game:FindFirstChildOfClass("CoreGui")
+        if cg then gui.Parent = cg else gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui") end
+    end
+end
+
+local function corner(obj, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r or 6); c.Parent = obj; return c end
+local function stroke(obj, c, t) local s = Instance.new("UIStroke"); s.Color = c or Theme.Stroke; s.Thickness = t or 1; s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; s.Parent = obj; return s end
+local function pad(obj, p) local u = Instance.new("UIPadding"); u.PaddingTop = UDim.new(0,p); u.PaddingBottom=UDim.new(0,p); u.PaddingLeft=UDim.new(0,p); u.PaddingRight=UDim.new(0,p); u.Parent=obj; return u end
+local function listY(obj, padY) local l = Instance.new("UIListLayout"); l.SortOrder=Enum.SortOrder.LayoutOrder; l.Padding=UDim.new(0,padY or 6); l.Parent=obj; return l end
+
+local function makeText(parent, txt, size, bold, color, xalign)
+    local l = Instance.new("TextLabel")
+    l.BackgroundTransparency = 1
+    l.Text = txt or ""
+    l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+    l.TextSize = size or 14
+    l.TextColor3 = color or Theme.Text
+    l.TextXAlignment = xalign or Enum.TextXAlignment.Left
+    l.Parent = parent
+    return l
+end
+
+local function tween(obj, infoTbl, time, style, dir)
+    local info = TweenInfo.new(time or 0.18, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out)
+    return TweenService:Create(obj, info, infoTbl)
+end
+
+-- ========= Library =========
+local OrionLike = {}
+
+function OrionLike:MakeWindow(opts)
+    opts = opts or {}
+    local title = opts.Name or "OrionLike"
+    local size = opts.Size or Vector2.new(640, 420)
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "OrionLikeUI"
+    protectParent(gui)
+
+    local main = Instance.new("Frame")
+    main.Size = UDim2.fromOffset(size.X, size.Y)
+    main.Position = UDim2.new(0.5, -size.X/2, 0.5, -size.Y/2)
+    main.BackgroundColor3 = Theme.Bg
+    corner(main, 10); stroke(main, Theme.Stroke, 1)
+    main.Parent = gui
+
+    -- Topbar
+    local top = Instance.new("Frame"); top.Name="Topbar"
+    top.BackgroundColor3 = Theme.Panel
+    top.Size = UDim2.new(1,0,0,40)
+    corner(top,10); stroke(top, Theme.Stroke, 1); top.Parent = main
+
+    local titleLbl = makeText(top, title, 16, true); titleLbl.Position = UDim2.new(0,14,0,0); titleLbl.Size = UDim2.new(1,-120,1,0)
+
+    local accent = Instance.new("Frame")
+    accent.Size = UDim2.new(0,140,0,3); accent.Position = UDim2.new(0,14,1,-5)
+    accent.BackgroundColor3 = Theme.Accent; corner(accent, 3); accent.Parent = top
+
+    -- Drag
+    do
+        local dragging, dragStart, startPos = false
+        top.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true; dragStart = i.Position; startPos = main.Position
+                i.Changed:Connect(function()
+                    if i.UserInputState == Enum.UserInputState.End then dragging = false end
+                end)
+            end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement) then
+                local delta = i.Position - dragStart
+                main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+    end
+
+    -- Left tabs
+    local tabsFrame = Instance.new("Frame")
+    tabsFrame.BackgroundColor3 = Theme.Panel
+    tabsFrame.Position = UDim2.new(0,10,0,50)
+    tabsFrame.Size = UDim2.new(0,170,1,-60)
+    corner(tabsFrame, 8); stroke(tabsFrame, Theme.Stroke, 1); pad(tabsFrame, 8)
+    tabsFrame.Parent = main
+
+    local tabsList = Instance.new("ScrollingFrame")
+    tabsList.BackgroundTransparency = 1; tabsList.BorderSizePixel = 0
+    tabsList.CanvasSize = UDim2.new(0,0,0,0); tabsList.AutomaticCanvasSize=Enum.AutomaticSize.Y
+    tabsList.ScrollBarThickness = 3
+    tabsList.Size = UDim2.new(1,0,1,0)
+    listY(tabsList, 6); tabsList.Parent = tabsFrame
+
+    -- Right content
+    local content = Instance.new("Frame")
+    content.BackgroundColor3 = Theme.Panel
+    content.Position = UDim2.new(0,190,0,50)
+    content.Size = UDim2.new(1,-200,1,-60)
+    corner(content, 8); stroke(content, Theme.Stroke, 1); pad(content, 10)
+    content.Parent = main
+
+    local pages = {}
+    local currentPage
+
+    local function switchTo(page)
+        if currentPage then currentPage.Visible = false end
+        currentPage = page
+        currentPage.Visible = true
+    end
+
+    -- Notifications
+    local notifHolder = Instance.new("Frame")
+    notifHolder.BackgroundTransparency = 1
+    notifHolder.AnchorPoint = Vector2.new(1,1)
+    notifHolder.Position = UDim2.new(1,-12,1,-12)
+    notifHolder.Size = UDim2.new(0,300,1, -24)
+    notifHolder.Parent = main
+    local notifList = listY(notifHolder, 6); notifList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+
+    local window = {}
+
+    function window:Notify(titleTxt, bodyTxt, duration)
+        duration = duration or 3
+        local n = Instance.new("Frame")
+        n.BackgroundColor3 = Theme.Panel; n.AutomaticSize = Enum.AutomaticSize.Y
+        n.Size = UDim2.new(0,280,0,0)
+        stroke(n, Theme.Stroke, 1); corner(n, 8); pad(n, 10); n.Parent = notifHolder
+
+        local t = makeText(n, titleTxt or "Aviso", 14, true, Theme.Text); t.Size = UDim2.new(1, -10, 0, 18)
+        local b = makeText(n, bodyTxt or "", 13, false, Theme.SubText); b.Position = UDim2.new(0,0,0,20); b.Size = UDim2.new(1,-10,0,16)
+        b.TextWrapped = true; b.AutomaticSize = Enum.AutomaticSize.Y
+
+        n.BackgroundTransparency = 1; t.TextTransparency = 1; b.TextTransparency = 1
+        tween(n, {BackgroundTransparency=0}, 0.2):Play()
+        tween(t, {TextTransparency=0}, 0.2):Play()
+        tween(b, {TextTransparency=0}, 0.2):Play()
+
+        task.delay(duration, function()
+            tween(n, {BackgroundTransparency=1}, 0.2):Play()
+            tween(t, {TextTransparency=1}, 0.2):Play()
+            tween(b, {TextTransparency=1}, 0.2):Play()
+            task.wait(0.22); n:Destroy()
+        end)
+    end
+
+    function window:AddTab(tabName)
+        tabName = tabName or "Aba"
+        local tabBtn = Instance.new("TextButton")
+        tabBtn.Size = UDim2.new(1,-6,0,34)
+        tabBtn.BackgroundColor3 = Theme.Bg
+        tabBtn.Text = ""; corner(tabBtn, 6); stroke(tabBtn, Theme.Stroke, 1); tabBtn.Parent = tabsList
+        local lbl = makeText(tabBtn, tabName, 14, true); lbl.Size = UDim2.new(1,-16,1,0); lbl.Position = UDim2.new(0,10,0,0)
+
+        local page = Instance.new("ScrollingFrame")
+        page.Visible = false
+        page.BackgroundTransparency = 1
+        page.Size = UDim2.new(1,0,1,0)
+        page.CanvasSize = UDim2.new(0,0,0,0); page.AutomaticCanvasSize=Enum.AutomaticSize.Y
+        page.ScrollBarThickness = 3
+        listY(page, 8); page.Parent = content
+
+        pages[tabName] = page
+        if not currentPage then
+            switchTo(page)
+            tween(tabBtn, {BackgroundColor3=Theme.Accent2}, 0.15):Play()
+        end
+
+        local function selectThis()
+            for _, btn in ipairs(tabsList:GetChildren()) do
+                if btn:IsA("TextButton") then tween(btn, {BackgroundColor3=Theme.Bg}, 0.12):Play() end
+            end
+            tween(tabBtn, {BackgroundColor3=Theme.Accent2}, 0.12):Play()
+            switchTo(page)
+        end
+        tabBtn.MouseButton1Click:Connect(selectThis)
+
+        -- Section builder
+        local tab = {}
+
+        function tab:AddSection(title)
+            local sec = Instance.new("Frame")
+            sec.BackgroundColor3 = Theme.Bg
+            sec.AutomaticSize = Enum.AutomaticSize.Y
+            sec.Size = UDim2.new(1,-6,0,0)
+            corner(sec, 6); stroke(sec, Theme.Stroke, 1); pad(sec, 10)
+            sec.Parent = page
+
+            local head = makeText(sec, title or "Seção", 14, true); head.Size = UDim2.new(1,0,0,18)
+            local body = Instance.new("Frame"); body.BackgroundTransparency=1; body.Size = UDim2.new(1,0,0,0); body.Position = UDim2.new(0,0,0,24); body.Parent = sec
+            local bodyList = listY(body, 8)
+
+            local section = {}
+
+            function section:AddButton(args)
+                args = args or {}
+                local txt, cb = args.Name or "Botão", args.Callback or function() end
+                local b = Instance.new("TextButton"); b.Text = ""; b.Size = UDim2.new(1,0,0,32)
+                b.BackgroundColor3 = Theme.Panel; corner(b,6); stroke(b, Theme.Stroke,1); b.Parent = body
+                local l = makeText(b, txt, 14, true); l.Size = UDim2.new(1,-16,1,0); l.Position=UDim2.new(0,10,0,0)
+                b.MouseEnter:Connect(function() tween(b,{BackgroundColor3=Theme.Accent2},0.12):Play() end)
+                b.MouseLeave:Connect(function() tween(b,{BackgroundColor3=Theme.Panel},0.12):Play() end)
+                b.MouseButton1Click:Connect(function()
+                    pcall(cb)
+                end)
+                return b
+            end
+
+            function section:AddToggle(args)
+                args = args or {}
+                local txt, def, cb = args.Name or "Toggle", args.Default or false, args.Callback or function() end
+                local f = Instance.new("Frame"); f.Size = UDim2.new(1,0,0,32); f.BackgroundColor3=Theme.Panel; corner(f,6); stroke(f,Theme.Stroke,1); f.Parent=body
+                local l = makeText(f, txt, 14, true); l.Size=UDim2.new(1,-64,1,0); l.Position=UDim2.new(0,10,0,0)
+                local knob = Instance.new("Frame"); knob.Size=UDim2.new(0,42,0,20); knob.Position=UDim2.new(1,-54,0.5,-10)
+                knob.BackgroundColor3=Theme.Bg; corner(knob,10); stroke(knob,Theme.Stroke,1); knob.Parent=f
+                local dot = Instance.new("Frame"); dot.Size=UDim2.new(0,18,0,18); dot.Position=UDim2.new(0,1,0,1)
+                dot.BackgroundColor3=Theme.SubText; corner(dot,9); dot.Parent=knob
+
+                local state = def
+                local function render()
+                    tween(dot, {Position = state and UDim2.new(0,23,0,1) or UDim2.new(0,1,0,1), BackgroundColor3 = state and Theme.Good or Theme.SubText}, 0.12):Play()
+                end
+                render()
+
+                local function toggle()
+                    state = not state
+                    render(); pcall(cb, state)
+                end
+                f.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then toggle() end
+                end)
+
+                return {
+                    Set = function(_, v) state = not not v; render() end,
+                    Get = function() return state end
+                }
+            end
+
+            function section:AddSlider(args)
+                args = args or {}
+                local txt, min, max, def, cb = args.Name or "Slider", args.Min or 0, args.Max or 100, args.Default or (args.Min or 0), args.Callback or function() end
+                local f = Instance.new("Frame"); f.Size = UDim2.new(1,0,0,54); f.BackgroundColor3=Theme.Panel; corner(f,6); stroke(f,Theme.Stroke,1); f.Parent=body
+                local l = makeText(f, txt, 14, true); l.Position=UDim2.new(0,10,0,6); l.Size=UDim2.new(1,-20,0,16)
+                local bar = Instance.new("Frame"); bar.Size=UDim2.new(1,-20,0,6); bar.Position=UDim2.new(0,10,0,34)
+                bar.BackgroundColor3=Theme.Bg; corner(bar,3); stroke(bar,Theme.Stroke,1); bar.Parent=f
+                local fill = Instance.new("Frame"); fill.Size=UDim2.new(0,0,1,0); fill.BackgroundColor3=Theme.Accent; corner(fill,3); fill.Parent=bar
+                local valLbl = makeText(f, tostring(def), 12, false, Theme.SubText, Enum.TextXAlignment.Right)
+                valLbl.Size=UDim2.new(1,-20,0,16); valLbl.Position=UDim2.new(0,10,0,6)
+
+                local value = def
+                local function setFromX(x)
+                    local rel = math.clamp((x - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                    local v = math.floor(min + (max - min) * rel + 0.5)
+                    value = v
+                    tween(fill, {Size = UDim2.new(rel, 0, 1, 0)}, 0.05):Play()
+                    valLbl.Text = tostring(v)
+                    pcall(cb, v)
+                end
+
+                -- init
+                setFromX(bar.AbsolutePosition.X + (bar.AbsoluteSize.X * (def - min) / (max - min)))
+
+                local dragging = false
+                bar.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dragging = true; setFromX(i.Position.X)
+                    end
+                end)
+                UIS.InputChanged:Connect(function(i)
+                    if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+                        setFromX(i.Position.X)
+                    end
+                end)
+                UIS.InputEnded:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+                end)
+
+                return {
+                    Set = function(_, v)
+                        v = math.clamp(v, min, max)
+                        setFromX(bar.AbsolutePosition.X + (bar.AbsoluteSize.X * (v - min) / (max - min)))
+                    end,
+                    Get = function() return value end
+                }
+            end
+
+            function section:AddDropdown(args)
+                args = args or {}
+                local txt, list, def, cb = args.Name or "Dropdown", args.Options or {}, args.Default, args.Callback or function() end
+                local f = Instance.new("Frame"); f.AutomaticSize=Enum.AutomaticSize.Y; f.Size=UDim2.new(1,0,0,36)
+                f.BackgroundColor3=Theme.Panel; corner(f,6); stroke(f,Theme.Stroke,1); pad(f,8); f.Parent=body
+
+                local header = Instance.new("TextButton"); header.Text=""; header.BackgroundTransparency=1; header.Size=UDim2.new(1,0,0,20); header.Parent=f
+                local l = makeText(header, txt, 14, true); l.Size=UDim2.new(1,-10,1,0)
+                local choiceLbl = makeText(f, def or "—", 12, false, Theme.SubText, Enum.TextXAlignment.Right)
+                choiceLbl.Size=UDim2.new(1,-16,0,16); choiceLbl.Position=UDim2.new(0,0,0,8)
+
+                local container = Instance.new("Frame"); container.BackgroundTransparency=1; container.Size=UDim2.new(1,0,0,0); container.Parent=f
+                local optionsHolder = Instance.new("Frame"); optionsHolder.BackgroundTransparency=1; optionsHolder.Size=UDim2.new(1,0,0,0); optionsHolder.Parent=container
+                local optsList = listY(optionsHolder, 6)
+
+                local open = false
+                local function setOpen(v)
+                    open = v
+                    local target = open and ( (#optionsHolder:GetChildren()-1) * (24+6) + 6 ) or 0
+                    tween(container, {Size = UDim2.new(1,0,0,target)}, 0.14):Play()
+                end
+
+                local function setChoice(v)
+                    choiceLbl.Text = tostring(v); pcall(cb, v)
+                end
+                if def then setChoice(def) end
+
+                local function addOption(name)
+                    local b = Instance.new("TextButton"); b.Text=""; b.Size=UDim2.new(1,0,0,24)
+                    b.BackgroundColor3 = Theme.Bg; corner(b,6); stroke(b,Theme.Stroke,1); b.Parent=optionsHolder
+                    local t = makeText(b, tostring(name), 13, false); t.Size=UDim2.new(1,-14,1,0); t.Position=UDim2.new(0,8,0,0)
+                    b.MouseButton1Click:Connect(function() setChoice(name); setOpen(false) end)
+                    b.MouseEnter:Connect(function() tween(b,{BackgroundColor3=Theme.Accent2},0.12):Play() end)
+                    b.MouseLeave:Connect(function() tween(b,{BackgroundColor3=Theme.Bg},0.12):Play() end)
+                end
+
+                for _,opt in ipairs(list) do addOption(opt) end
+                header.MouseButton1Click:Connect(function() setOpen(not open) end)
+
+                return {
+                    Set = function(_, v) setChoice(v) end,
+                    Refresh = function(_, newList)
+                        for _,c in ipairs(optionsHolder:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+                        for _,opt in ipairs(newList or {}) do addOption(opt) end
+                    end,
+                    Open = function(_, v) setOpen(not not v) end
+                }
+            end
+
+            return section
+        end
+
+        return tab
+    end
+
+    function window:Destroy()
+        gui:Destroy()
+    end
+
+    -- Pequeno destaque de entrada
+    main.BackgroundTransparency = 1
+    tween(main, {BackgroundTransparency=0}, 0.18):Play()
+
+    return window
+end
+
+-- Return if used as module
+return OrionLike
