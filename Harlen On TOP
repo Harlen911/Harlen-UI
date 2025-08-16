@@ -70,16 +70,66 @@ function OrionLike:MakeWindow(opts)
     main.Parent = gui
 
     -- Topbar
-    local top = Instance.new("Frame"); top.Name="Topbar"
-    top.BackgroundColor3 = Theme.Panel
-    top.Size = UDim2.new(1,0,0,40)
-    corner(top,10); stroke(top, Theme.Stroke, 1); top.Parent = main
+local top = Instance.new("Frame"); top.Name = "Topbar"
+top.BackgroundColor3 = Theme.Panel
+top.Size = UDim2.new(1, 0, 0, 40)
+corner(top, 10); stroke(top, Theme.Stroke, 1)
+top.Parent = main
 
-    local titleLbl = makeText(top, title, 16, true); titleLbl.Position = UDim2.new(0,14,0,0); titleLbl.Size = UDim2.new(1,-120,1,0)
+-- Título
+local titleLbl = makeText(top, title, 16, true)
+titleLbl.Position = UDim2.new(0, 14, 0, 0)
+titleLbl.Size = UDim2.new(1, -120, 1, 0)
 
-    local accent = Instance.new("Frame")
-    accent.Size = UDim2.new(0,140,0,3); accent.Position = UDim2.new(0,14,1,-5)
-    accent.BackgroundColor3 = Theme.Accent; corner(accent, 3); accent.Parent = top
+local accent = Instance.new("Frame")
+accent.Size = UDim2.new(0, 140, 0, 3)
+accent.Position = UDim2.new(0, 14, 1, -5)
+accent.BackgroundColor3 = Theme.Accent
+corner(accent, 3)
+accent.Parent = top
+
+-- Botões (Fechar / Minimizar)
+local btnSize = UDim2.new(0, 24, 0, 24)
+local btnY = UDim2.new(1, -30, 0.5, -12)
+
+-- Botão Fechar (X)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = btnSize
+closeBtn.Position = btnY
+closeBtn.BackgroundColor3 = Theme.Warn
+corner(closeBtn, 6); stroke(closeBtn, Theme.Stroke, 1)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextColor3 = Theme.Text
+closeBtn.TextSize = 14
+closeBtn.Parent = top
+
+-- Botão Minimizar (-)
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = btnSize
+minimizeBtn.Position = UDim2.new(1, -60, 0.5, -12)
+minimizeBtn.BackgroundColor3 = Theme.Accent2
+corner(minimizeBtn, 6); stroke(minimizeBtn, Theme.Stroke, 1)
+minimizeBtn.Text = "-"
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextColor3 = Theme.Text
+minimizeBtn.TextSize = 18
+minimizeBtn.Parent = top
+
+-- Eventos dos botões
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        main.Size = UDim2.fromOffset(size.X, 40)
+    else
+        main.Size = UDim2.fromOffset(size.X, size.Y)
+    end
+end)
 
     -- Drag
     do
